@@ -104,3 +104,13 @@ Filters also can be combined:
 ```python
 >>> spaces.get(s_type='personal', status='archived')
 ```
+Retrieving and filtering the spaces also shown in [example_spaces_delete.py](example_spaces_delete.py).
+
+##### Delete the space
+
+```python
+>>> from confluence_api import Spaces
+>>> spaces = Spaces()
+>>> spaces.delete('SPACEKEY')
+```
+Script [example_spaces_delete.py](example_spaces_delete.py) show how to filter the spaces by specific description and remove them in loop.

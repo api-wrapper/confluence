@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Wrappers for API of Atlassian Confluence"""
 import os
+from time import sleep
 import requests
 
 def parse(resp):
@@ -104,3 +105,19 @@ class Spaces(Confluence):
             resp = parse(resp)
             result.extend(resp['results'])
         return result
+
+    def delete(self, key):
+        """Initiate deletion of space and waiting for process completion.
+           key -- mandatory string variable. The key of the space to delete.
+        """
+        url = self.rest('space/' + key)
+        resp = self.session.delete(url)
+        resp = parse(resp)
+
+        url = self.base_url + resp['links']['status']
+        resp = self.session.get(url)
+        resp = parse(resp)
+        while resp['percentageComplete'] < 100:
+            resp = self.session.get(url)
+            resp = parse(resp)
+            sleep(1)
