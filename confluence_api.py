@@ -2,6 +2,7 @@
 """Wrappers for API of Atlassian Confluence"""
 import os
 from time import sleep
+import json
 import requests
 
 def parse(resp):
@@ -33,6 +34,22 @@ class Confluence:
     def rest(self, path) -> str:
         """Construct URL of REST API"""
         return self.base_url + '/rest/api/' + path
+
+    def rpc(self) -> str:
+        """Construct URL of RPC API (deprecated)"""
+        return self.base_url + '/rpc/json-rpc/confluenceservice-v2'
+
+    def download(self, url, filename=None):
+        """Download the file to current folder. Optionally set filename"""
+        # kudos to https://stackoverflow.com/a/16696317 for this code
+        if filename is None:
+            filename = url.split('/')[-1]
+        with self.session.get(url, stream=True) as r:
+            r.raise_for_status()
+            with open(filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        return filename
 
 class Audit(Confluence):
     """Methods to operate with Audit Log events"""
@@ -105,6 +122,36 @@ class Spaces(Confluence):
             resp = parse(resp)
             result.extend(resp['results'])
         return result
+
+    def export(self, key, scheme='XML', save_as=None):
+        """Export the space using deprecated RPC API (unavailable in Cloud).
+        Confluence export the space compressed in ZIP archive.
+        Exported archive authomatically downloads to current directory.
+
+        key -- mandatory variable, identifier of space.
+        scheme -- XML (default) or HTML. Case-sensitive.
+        save_as -- optionally set the name and extension of downloaded file.
+        """
+        url = self.rpc()
+        data = json.dumps({
+            'jsonrpc': 2.0,
+            'method': 'exportSpace',
+            'params': [
+                key,
+                'TYPE_' + scheme,
+                'true'
+            ],
+            'id': 12345})
+
+        resp = self.session.post(url, data=data)
+        resp = parse(resp)
+
+        url = resp['result']
+
+        if save_as is None:
+            self.download(url)
+        else:
+            self.download(url, filename=save_as)
 
     def delete(self, key):
         """Initiate deletion of space and waiting for process completion.

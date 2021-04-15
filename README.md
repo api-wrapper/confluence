@@ -106,6 +106,23 @@ Filters also can be combined:
 ```
 Retrieving and filtering the spaces also shown in [example_spaces_delete.py](example_spaces_delete.py).
 
+##### Export the space
+
+This method depends on using RPC API which known as deprecated. RPC API calls not supported in Confluence Cloud.
+
+This code will be changed if we will find corresponding functional in upcoming versions of REST API for Confluence Cloud and Data Center.
+
+```python
+>>> from confluence_api import Spaces
+>>> spaces = Spaces()
+>>> spaces.export('SPACEKEY', save_as='example.zip')
+```
+This exports the space in XML format (Confluence automatically zip files to archive) and download archive to current folder.
+
+Variable `save_as` is optional - you may skip it and use defaults proposed by Confluence.
+
+Default XML export could be later imported to Confluence. Optionally you may format by adding argument `scheme='HTML'`
+
 ##### Delete the space
 
 ```python
