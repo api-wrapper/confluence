@@ -3,6 +3,7 @@
 import os
 from time import sleep
 import json
+import shutil
 import requests
 
 def parse(resp):
@@ -41,14 +42,12 @@ class Confluence:
 
     def download(self, url, filename=None):
         """Download the file to current folder. Optionally set filename"""
-        # kudos to https://stackoverflow.com/a/16696317 for this code
+        # kudos to https://stackoverflow.com/a/39217788 for this code
         if filename is None:
             filename = url.split('/')[-1]
         with self.session.get(url, stream=True) as r:
-            r.raise_for_status()
             with open(filename, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    f.write(chunk)
+                shutil.copyfileobj(r.raw, f)
         return filename
 
 class Audit(Confluence):
