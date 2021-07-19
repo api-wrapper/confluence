@@ -17,30 +17,26 @@ API for Cloud and on-premise Confluence versions may have some differences. This
 
 - Python 3.6+
 - Python [Requests](https://requests.readthedocs.io/en/master/) library
-- Some API endpoints require Confluence administrator permissions or not available in Free license. In such cases API return informative error message.
+- Some API endpoints require `Confluence administrator` permissions or not available in Free license (requests fails with appropriate error message). Some actions require membership in a `confluence-administrators` group which is not the same as a `Confluence administrator` permission (see [global permissions overview](https://confluence.atlassian.com/doc/global-permissions-overview-138709.html) for details).
 
 ### Usage
 
 Assuming you have a Linux installed:
 
 ```bash
-$ git clone https://github.com/api-wrapper/confluence.git
-$ cd confluence/
-
-# Install Python dependencies:
-$ pip3 install -r ./requirements.txt --user
-
-# Set environment variables:
-$ export CONF_ADDR="" # URL of your Confluence instance
-$ export CONF_USER="" # email or username of Confluence user
-$ export CONF_PASS="" # password or API token
+git clone https://github.com/api-wrapper/confluence.git
+cd confluence/
+python3 -m pip install requests --user
+export CONF_ADDR="" # URL of your Confluence instance
+export CONF_USER="" # email or username of Confluence user
+export CONF_PASS="" # password or API token
 ```
 
 ### Documentation
 Code documented with Python [Docstrings](https://www.python.org/dev/peps/pep-0257/#what-is-a-docstring).
 You may review built-in help with command like this:
 ```bash
-$ pydoc3 ./confluence_api.py
+pydoc3 ./confluence_api.py
 ```
 
 ### Examples
@@ -50,7 +46,7 @@ $ pydoc3 ./confluence_api.py
 Examples described with Python command-line interface. Assuming the OS is Linux, need open the shell and enter:
 
 ```bash
-$ python3
+python3
 ```
 This open the window similar to:
 
@@ -68,14 +64,14 @@ This code return audit records with a word 'Space' registered during 2 months.
 Note: Access require admin privileges. Audit not available in Confluence Free edition.
 
 ```python
->>> from confluence_api import Audit
->>> audit = Audit()
->>> audit.get_records(start='2021-01-01', end='2021-03-01', search='Space')
+from confluence_api import Audit
+audit = Audit()
+audit.get_records(start='2021-01-25', end='2021-03-31', search='Space')
 ```
 
 You may omit passing the filter parameters, but in large instances this query may execute quite long.
 ```python
->>> audit.get_records()
+audit.get_records()
 ```
 
 ##### Get list of spaces
@@ -83,39 +79,51 @@ You may omit passing the filter parameters, but in large instances this query ma
 Query show all spaces available for account which execute the request. It may optionally expand  returned parameters. [More about expansions in API](https://developer.atlassian.com/server/confluence/expansions-in-the-rest-api/).
 
 ```python
->>> from confluence_api import Spaces
->>> spaces = Spaces()
->>> spaces.get(expand='homepage')
+from confluence_api import Spaces
+spaces = Spaces()
+spaces.get(expand='homepage')
 ```
 
 You may also filter results:
 ```python
->>> spaces.get(key='SPACEKEY1')
->>> spaces.get(key=['SPACEKEY1','SPACEKEY2'])
+spaces.get(key='SPACEKEY1')
+spaces.get(key=['SPACEKEY1','SPACEKEY2'])
 
->>> spaces.get(s_type='global')
->>> spaces.get(s_type='personal')
+spaces.get(s_type='global')
+spaces.get(s_type='personal')
 
->>> spaces.get(status='current')
->>> spaces.get(status='archived')
+spaces.get(status='current')
+spaces.get(status='archived')
 ```
 
 Filters also can be combined:
 ```python
->>> spaces.get(s_type='personal', status='archived')
+spaces.get(s_type='personal', status='archived')
 ```
 Retrieving and filtering the spaces also shown in [example_spaces_delete.py](example_spaces_delete.py).
 
+##### Get permissions used in space
+
+This method depends on using RPC API which known as deprecated. RPC API calls not supported in a Confluence Cloud.
+
+```python
+from confluence_api import Spaces
+spaces = Spaces()
+spaces.get_permissions('SPACEKEY')
+```
+
+Method return list of dicts. You may process it in loop.
+
 ##### Export the space
 
-This method depends on using RPC API which known as deprecated. RPC API calls not supported in Confluence Cloud.
+This method depends on using RPC API which known as deprecated. RPC API calls not supported in a Confluence Cloud.
 
 This code will be changed if we will find corresponding functional in upcoming versions of REST API for Confluence Cloud and Data Center.
 
 ```python
->>> from confluence_api import Spaces
->>> spaces = Spaces()
->>> spaces.export('SPACEKEY', save_as='example.zip')
+from confluence_api import Spaces
+spaces = Spaces()
+spaces.export('SPACEKEY', save_as='example.zip')
 ```
 This exports the space in XML format (Confluence automatically zip files to archive) and download archive to current folder.
 
@@ -126,8 +134,22 @@ Default XML export could be later imported to Confluence. Optionally you may for
 ##### Delete the space
 
 ```python
->>> from confluence_api import Spaces
->>> spaces = Spaces()
->>> spaces.delete('SPACEKEY')
+from confluence_api import Spaces
+spaces = Spaces()
+spaces.delete('SPACEKEY')
 ```
 Script [example_spaces_delete.py](example_spaces_delete.py) show how to filter the spaces by specific description and remove them in loop.
+
+##### Get space permissions (Cloud)
+```python
+from confluence_api import Spaces
+
+spaces = Spaces()
+review = spaces.get(s_type='global', status='current',
+                    expand='permissions')
+
+for space in review:
+    print(F"Permissions of {space['name']} ({space['key']}):")
+    for perm in space['permissions']:
+        print(perm)
+```

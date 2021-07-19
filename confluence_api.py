@@ -12,8 +12,8 @@ def parse(resp):
         resp = resp.json()
     except ValueError as error:
         raise RuntimeError('Decoding JSON has failed') from error
-    if 'statusCode' in resp or 'status-code' in resp:
-        raise RuntimeError(resp)
+    if 'statusCode' in resp or 'status-code' in resp or 'error' in resp:
+        raise RuntimeError(resp) # 'error' in resp seems appear with RPC only
     return resp
 
 class Confluence:
@@ -121,6 +121,25 @@ class Spaces(Confluence):
             resp = parse(resp)
             result.extend(resp['results'])
         return result
+
+    def get_permissions(self, key):
+        """List space permissions using deprecated RPC API (unavailable in Cloud).
+
+        key -- mandatory variable, identifier of space
+        """
+        url = self.rpc()
+        data = json.dumps({
+            'jsonrpc': 2.0,
+            'method': 'getSpacePermissionSets',
+            'params': [
+                key
+            ],
+            'id': 12345})
+
+        resp = self.session.post(url, data=data)
+        resp = parse(resp)
+
+        return resp['result']
 
     def export(self, key, scheme='XML', save_as=None):
         """Export the space using deprecated RPC API (unavailable in Cloud).
